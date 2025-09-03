@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'models/song.dart';
 import 'playlist_page.dart';
+import 'utils/refresh_notifier.dart';
 import 'utils/storage.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -18,25 +19,38 @@ class _HistoryPageState extends State<HistoryPage>
   Map<String, dynamic> userStats = {};
   bool isLoading = true;
   late TabController _tabController;
+  final RefreshNotifier _refreshNotifier = RefreshNotifier();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _refreshNotifier.addListener(_onRefresh);
     _loadData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _refreshNotifier.removeListener(_onRefresh);
     super.dispose();
   }
 
+  void _onRefresh() {
+    print('DEBUG: Refreshing history page...');
+    _loadData();
+  }
+
   Future<void> _loadData() async {
+    print('DEBUG: History page - Loading data...');
     try {
       final recent = await StorageService.getRecentPlaylists();
       final history = await StorageService.getPlaylistHistory();
       final stats = await StorageService.getUserStats();
+
+      print(
+        'DEBUG: History page - Loaded ${recent.length} recent, ${history.length} history items',
+      );
 
       setState(() {
         recentPlaylists = recent;
@@ -45,6 +59,7 @@ class _HistoryPageState extends State<HistoryPage>
         isLoading = false;
       });
     } catch (e) {
+      print('DEBUG: History page - Error loading data: $e');
       setState(() {
         isLoading = false;
       });
@@ -66,6 +81,13 @@ class _HistoryPageState extends State<HistoryPage>
         title: const Text('Music History'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            tooltip: 'Refresh',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -96,14 +118,11 @@ class _HistoryPageState extends State<HistoryPage>
           children: [
             Icon(Icons.access_time, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text(
-              'No recent playlists',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
+            Text('No recent playlists', style: TextStyle(fontSize: 18)),
             SizedBox(height: 8),
             Text(
               'Generate some playlists to see them here!',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -128,10 +147,7 @@ class _HistoryPageState extends State<HistoryPage>
           children: [
             Icon(Icons.history, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text(
-              'No playlist history',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
+            Text('No playlist history', style: TextStyle(fontSize: 18)),
           ],
         ),
       );
@@ -155,10 +171,7 @@ class _HistoryPageState extends State<HistoryPage>
           children: [
             Icon(Icons.analytics, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text(
-              'No statistics yet',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
+            Text('No statistics yet', style: TextStyle(fontSize: 18)),
           ],
         ),
       );
@@ -287,7 +300,12 @@ class _HistoryPageState extends State<HistoryPage>
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(
+                context,
+              ).textTheme.bodySmall?.color?.withOpacity(0.6),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -344,7 +362,12 @@ class _HistoryPageState extends State<HistoryPage>
             const SizedBox(height: 4),
             Text(
               '${playlist.songs.length} songs • ${_formatDate(playlist.createdAt)}',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.color?.withOpacity(0.6),
+              ),
             ),
           ],
         ),

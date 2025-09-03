@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/song.dart';
+import 'refresh_notifier.dart';
 
 class StorageService {
   static const String _favoritesKey = 'favorite_playlists';
@@ -12,19 +13,18 @@ class StorageService {
 
   // Save a playlist to favorites
   static Future<void> saveFavoritePlaylist(Playlist playlist) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      List<Playlist> favorites = await getFavoritePlaylists();
+    final prefs = await SharedPreferences.getInstance();
+    List<Playlist> favorites = await getFavoritePlaylists();
 
-      // Check if playlist already exists (by ID)
-      bool exists = favorites.any((p) => p.id == playlist.id);
-      if (!exists) {
-        favorites.add(playlist);
-        String jsonString = Playlist.listToJson(favorites);
-        await prefs.setString(_favoritesKey, jsonString);
-      }
-    } catch (e) {
-      print('Error saving favorite playlist: $e');
+    // Check if playlist already exists (by ID)
+    bool exists = favorites.any((p) => p.id == playlist.id);
+    if (!exists) {
+      favorites.add(playlist);
+      String jsonString = Playlist.listToJson(favorites);
+      bool success = await prefs.setString(_favoritesKey, jsonString);
+
+      // Notify listeners
+      RefreshNotifier().notifyFavoritesChanged();
     }
   }
 
@@ -37,9 +37,7 @@ class StorageService {
       favorites.removeWhere((playlist) => playlist.id == playlistId);
       String jsonString = Playlist.listToJson(favorites);
       await prefs.setString(_favoritesKey, jsonString);
-    } catch (e) {
-      print('Error removing favorite playlist: $e');
-    }
+    } catch (e) {}
   }
 
   // Get all favorite playlists
@@ -49,11 +47,11 @@ class StorageService {
       String? jsonString = prefs.getString(_favoritesKey);
 
       if (jsonString != null) {
-        return Playlist.listFromJson(jsonString);
+        List<Playlist> playlists = Playlist.listFromJson(jsonString);
+        return playlists;
       }
       return [];
     } catch (e) {
-      print('Error getting favorite playlists: $e');
       return [];
     }
   }
@@ -64,7 +62,6 @@ class StorageService {
       List<Playlist> favorites = await getFavoritePlaylists();
       return favorites.any((playlist) => playlist.id == playlistId);
     } catch (e) {
-      print('Error checking if playlist is favorite: $e');
       return false;
     }
   }
@@ -74,9 +71,7 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_favoritesKey);
-    } catch (e) {
-      print('Error clearing favorites: $e');
-    }
+    } catch (e) {}
   }
 
   // Save to recent playlists (max 10)
@@ -99,11 +94,12 @@ class StorageService {
       String jsonString = Playlist.listToJson(recent);
       await prefs.setString(_recentPlaylistsKey, jsonString);
 
+      // Notify listeners
+      RefreshNotifier().notifyHistoryChanged();
+
       // Also save to history
       await saveToHistory(playlist);
-    } catch (e) {
-      print('Error saving recent playlist: $e');
-    }
+    } catch (e) {}
   }
 
   // Save to complete history
@@ -120,9 +116,7 @@ class StorageService {
 
       String jsonString = Playlist.listToJson(history);
       await prefs.setString(_playlistHistoryKey, jsonString);
-    } catch (e) {
-      print('Error saving to history: $e');
-    }
+    } catch (e) {}
   }
 
   // Get recent playlists
@@ -132,11 +126,11 @@ class StorageService {
       String? jsonString = prefs.getString(_recentPlaylistsKey);
 
       if (jsonString != null) {
-        return Playlist.listFromJson(jsonString);
+        final playlists = Playlist.listFromJson(jsonString);
+        return playlists;
       }
       return [];
     } catch (e) {
-      print('Error getting recent playlists: $e');
       return [];
     }
   }
@@ -148,11 +142,11 @@ class StorageService {
       String? jsonString = prefs.getString(_playlistHistoryKey);
 
       if (jsonString != null) {
-        return Playlist.listFromJson(jsonString);
+        final playlists = Playlist.listFromJson(jsonString);
+        return playlists;
       }
       return [];
     } catch (e) {
-      print('Error getting playlist history: $e');
       return [];
     }
   }

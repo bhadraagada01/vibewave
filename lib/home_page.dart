@@ -402,13 +402,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.library_music_rounded),
+                        Icon(Icons.library_music_rounded, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
                           'Music Genre:',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -419,16 +420,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade600),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade600),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
                       ),
+                      dropdownColor: Colors.grey.shade800,
+                      style: const TextStyle(color: Colors.white),
                       items: genreOptions.map((genre) {
                         return DropdownMenuItem<String>(
                           value: genre,
-                          child: Text(genre),
+                          child: Text(
+                            genre,
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -462,13 +473,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.queue_music_rounded),
+                        Icon(Icons.queue_music_rounded, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
                           'Number of songs:',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -494,15 +506,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Theme.of(context).primaryColor
-                                  : Theme.of(
-                                      context,
-                                    ).primaryColor.withOpacity(0.1),
+                                  ? Colors.deepPurple.shade400
+                                  : Colors.grey.shade700,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: Theme.of(context).primaryColor,
+                                color: isSelected
+                                    ? Colors.deepPurple.shade300
+                                    : Colors.grey.shade500,
                                 width: isSelected ? 2 : 1,
                               ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.deepPurple.shade300
+                                            .withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Text(
                               '$count',
@@ -510,7 +532,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
                                     ? Colors.white
-                                    : Theme.of(context).primaryColor,
+                                    : Colors.grey.shade300,
                               ),
                             ),
                           ),

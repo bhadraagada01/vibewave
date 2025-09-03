@@ -1,8 +1,11 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'models/song.dart';
+import 'utils/refresh_notifier.dart';
 import 'utils/storage.dart';
 
 class PlaylistPage extends StatefulWidget {
@@ -69,6 +72,9 @@ class _PlaylistPageState extends State<PlaylistPage>
       setState(() {
         isFavorite = !isFavorite;
       });
+
+      // Notify other pages to refresh
+      RefreshNotifier().notifyFavoritesChanged();
 
       // Show styled feedback
       if (mounted) {

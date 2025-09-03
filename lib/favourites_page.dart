@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'models/song.dart';
 import 'playlist_page.dart';
+import 'utils/refresh_notifier.dart';
 import 'utils/storage.dart';
 
 class FavouritesPage extends StatefulWidget {
@@ -11,24 +12,53 @@ class FavouritesPage extends StatefulWidget {
   State<FavouritesPage> createState() => _FavouritesPageState();
 }
 
-class _FavouritesPageState extends State<FavouritesPage> {
+class _FavouritesPageState extends State<FavouritesPage>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   List<Playlist> favoritePlaylists = [];
   bool isLoading = true;
+  final RefreshNotifier _refreshNotifier = RefreshNotifier();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshNotifier.addListener(_onRefresh);
     _loadFavorites();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshNotifier.removeListener(_onRefresh);
+    super.dispose();
+  }
+
+  void _onRefresh() {
+    print('DEBUG: Refreshing favorites page...');
+    _loadFavorites();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadFavorites();
+    }
+  }
+
   Future<void> _loadFavorites() async {
+    print('DEBUG: Loading favorites...');
     try {
       final favorites = await StorageService.getFavoritePlaylists();
+      print('DEBUG: Loaded ${favorites.length} favorite playlists');
       setState(() {
         favoritePlaylists = favorites;
         isLoading = false;
       });
     } catch (e) {
+      print('DEBUG: Error in _loadFavorites: $e');
       setState(() {
         isLoading = false;
       });
@@ -97,11 +127,17 @@ class _FavouritesPageState extends State<FavouritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       appBar: AppBar(
         title: const Text('Favorite Playlists'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadFavorites,
+            tooltip: 'Refresh',
+          ),
           if (favoritePlaylists.isNotEmpty)
             IconButton(
               onPressed: () {
@@ -150,16 +186,12 @@ class _FavouritesPageState extends State<FavouritesPage> {
                   SizedBox(height: 16),
                   Text(
                     'No favorite playlists yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Create some playlists and mark them as favorites!',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -193,7 +225,12 @@ class _FavouritesPageState extends State<FavouritesPage> {
                         ),
                       Text(
                         '${playlist.songs.length} songs • ${_formatDate(playlist.createdAt)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withOpacity(0.6),
+                        ),
                       ),
                     ],
                   ),
@@ -223,13 +260,6 @@ class _FavouritesPageState extends State<FavouritesPage> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pop(context); // Go back to home page
-        },
-        tooltip: 'Create New Playlist',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 

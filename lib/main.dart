@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'favourites_page.dart';
 import 'history_page.dart';
 import 'home_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Could not load .env file: $e');
+  }
+
   runApp(const MoodBeatsApp());
 }
 
@@ -60,10 +69,18 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _checkApiKey() {
-    // For development, you can set a default key or use --dart-define
-    const String? apiKey = String.fromEnvironment('GEMINI_API_KEY');
+    // Try to load from .env file first
+    String? apiKey = dotenv.env['GEMINI_API_KEY'];
 
-    if (apiKey.isEmpty) {
+    // Fallback to dart-define
+    if (apiKey == null || apiKey.isEmpty) {
+      const envApiKey = String.fromEnvironment('GEMINI_API_KEY');
+      if (envApiKey.isNotEmpty) {
+        apiKey = envApiKey;
+      }
+    }
+
+    if (apiKey == null || apiKey.isEmpty) {
       // Show dialog to enter API key
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showApiKeyDialog();
@@ -162,24 +179,46 @@ class _MainScreenState extends State<MainScreen> {
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          selectedItemColor: Theme.of(context).primaryColor,
-          unselectedItemColor: Colors.grey,
-          selectedFontSize: 12,
+          selectedItemColor: Colors.deepPurple.shade300,
+          unselectedItemColor: Colors.grey.shade500,
+          selectedFontSize: 14,
           unselectedFontSize: 12,
-          items: const [
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home),
+              icon: Icon(
+                Icons.home_rounded,
+                color: _currentIndex == 0
+                    ? Colors.deepPurple.shade300
+                    : Colors.grey.shade500,
+              ),
+              activeIcon: Icon(Icons.home, color: Colors.deepPurple.shade300),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border_rounded),
-              activeIcon: Icon(Icons.favorite),
+              icon: Icon(
+                Icons.favorite_border_rounded,
+                color: _currentIndex == 1
+                    ? Colors.deepPurple.shade300
+                    : Colors.grey.shade500,
+              ),
+              activeIcon: Icon(
+                Icons.favorite,
+                color: Colors.deepPurple.shade300,
+              ),
               label: 'Favorites',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded),
-              activeIcon: Icon(Icons.history),
+              icon: Icon(
+                Icons.history_rounded,
+                color: _currentIndex == 2
+                    ? Colors.deepPurple.shade300
+                    : Colors.grey.shade500,
+              ),
+              activeIcon: Icon(
+                Icons.history,
+                color: Colors.deepPurple.shade300,
+              ),
               label: 'History',
             ),
           ],
